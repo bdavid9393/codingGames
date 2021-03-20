@@ -37,7 +37,7 @@ public class JRisk {
 
 
         for (int i = 0; i != pBuilding.npoints; i++) {
-            possibleBuilding.addPoint(pBuilding.xpoints[i] / Player.ACCURACY * (int) scaleWidth, pBuilding.ypoints[i] / Player.ACCURACY * (int) scaleHeight);
+            possibleBuilding.addPoint(pBuilding.xpoints[i] * (int) scaleWidth / Player.ACCURACY, pBuilding.ypoints[i] * (int) scaleHeight / Player.ACCURACY);
         }
 
         initComponents();
