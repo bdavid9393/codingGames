@@ -11,13 +11,15 @@ import java.util.List;
  **/
 class Player {
 
-    public static final int ACCURACY = 1000;
+    public static final int ACCURACY = 10;
 
     static class Game {
 
         Polygon building;
         Point batmanPosition;
         Point prevPosition = new Point();
+
+        List<Point> triedPoints = new ArrayList<>();
 
 
         public Game(final int W, final int H, final int batmanX, final int batmanY) {
@@ -30,10 +32,25 @@ class Player {
             batmanPosition = new Point(batmanX * ACCURACY, batmanY * ACCURACY);
         }
 
+        private void warmer() {
+            cutBuilding(prevPosition, batmanPosition, true);
+        }
+
+        private void colder() {
+            cutBuilding(batmanPosition, prevPosition, true);
+        }
+
+        private void same() {
+            cutBuilding(prevPosition, batmanPosition, false);
+            cutBuilding(batmanPosition, prevPosition, false);
+
+        }
+
+
         private String getNextMove() {
             //            int x = (int) building.getBounds().getCenterX();
             //            int y = (int) building.getBounds().getCenterY();
-
+            triedPoints.add(new Point(batmanPosition.x / ACCURACY, batmanPosition.y / ACCURACY));
             int sumX = 0;
             for (final int xpoint : building.xpoints) {
                 sumX = sumX + xpoint;
@@ -46,22 +63,39 @@ class Player {
             }
             int y = sumY / building.ypoints.length;
 
-            if (x == batmanPosition.x && y == batmanPosition.y) {
-                //                    Point randomPoint;
-                //  debug("SAME POINT");
-                //                 do {
-                //                    randomPoint = generatePoint(building);
-                //                } while (randomPoint.x / ACCURACY == x / ACCURACY && randomPoint.y / ACCURACY == y / ACCURACY);
-                Point newPoint = getPointWhenInTheMiddle();
-                x = newPoint.x;
-                y = newPoint.y;
-                //x = randomPoint.x;
-                //y = randomPoint.y;
+            int roundedX = x / ACCURACY;
+            int roundedY = y / ACCURACY;
+
+            while (isTriedPoint(roundedX, roundedY) || !building.contains(roundedX * ACCURACY, roundedY * ACCURACY)) {
+                Point randPoint = generatePoint(building);
+                roundedX = randPoint.x / ACCURACY;
+                roundedY = randPoint.y / ACCURACY;
+
             }
 
+//            if (x / ACCURACY == batmanPosition.x / ACCURACY && y / ACCURACY == batmanPosition.y / ACCURACY) {
+//                //                    Point randomPoint;
+//                debug("SAME POINT");
+//                //                 do {
+//                //                    randomPoint = generatePoint(building);
+//                //                } while (randomPoint.x / ACCURACY == x / ACCURACY && randomPoint.y / ACCURACY == y / ACCURACY);
+//                Point newPoint = getPointWhenInTheMiddle();
+//                x = newPoint.x;
+//                y = newPoint.y;
+//                //x = randomPoint.x;
+//                //y = randomPoint.y;
+//            }
+//
+//
+//            if (isTriedPoint(roundedX, roundedY)) {
+//                debug("mááá benne van");
+//            }
+
             prevPosition.setLocation(batmanPosition);
-            batmanPosition.setLocation(x, y);
-            return Math.round(x / ACCURACY) + " " + Math.round(y / ACCURACY);
+            batmanPosition.setLocation(roundedX * ACCURACY, roundedY * ACCURACY);
+            debug("Jump pos: " + x + ", " + y);
+            debug("Jump rounded pos: " + roundedX + ", " + roundedY);
+            return roundedX + " " + roundedY;
         }
 
 
@@ -87,19 +121,17 @@ class Player {
             return new Point((int) newRectangle.getCenterX(), (int) newRectangle.getCenterY());
         }
 
-        private void warmer() {
-            cutBuilding(prevPosition, batmanPosition, true);
+        private boolean isTriedPoint(int x, int y) {
+            for (Point triedPoint : triedPoints) {
+                if (x == triedPoint.x && y == triedPoint.y) {
+                    return true;
+                }
+            }
+            return false;
         }
 
-        private void colder() {
-            cutBuilding(batmanPosition, prevPosition, true);
-        }
 
-        private void same() {
-            cutBuilding(prevPosition, batmanPosition, false);
-            cutBuilding(batmanPosition, prevPosition, false);
-
-        }
+        //Cut, rotate polgions
 
         private void cutBuilding(Point from, Point to, boolean middleRotate) {
             Point[] points;
@@ -117,9 +149,10 @@ class Player {
             if (intersections.isEmpty()) {
                 return;
             }
-            Polygon newPoly = cutPolygon(building, intersections.get(0), intersections.get(1), from, to);
-            building = newPoly;
+            Polygon cutPoly = cutPolygon(building, intersections.get(0), intersections.get(1), from, to);
+            building = cutPoly;
         }
+
 
         private Point[] rotateLineInTheMiddle(Point first, Point second) {
             Point OM = new Point((first.x + second.x) / 2, (first.y + second.y) / 2);
@@ -229,6 +262,7 @@ class Player {
             return leftPoly.contains(to) ? leftPoly : rightPoly;
         }
 
+
         private ArrayList<Point> sortPoly(ArrayList<Point> originalPoints) {
             ArrayList<Point> sortedList = new ArrayList<>();
 
@@ -313,7 +347,7 @@ class Player {
     static int WIDHT;
     static int HEIGHT;
 
-    //    public static void main(String args[]) {
+//        public static void main(String args[]) {
 //        Scanner in = new Scanner(System.in);
 //        int W = in.nextInt(); // width of the building.
 //        int H = in.nextInt(); // height of the building.
@@ -336,20 +370,24 @@ class Player {
 //        }
 //
 //    }
-    //
+
 
     static Integer rounds = 80;
+
     public static void main(String args[]) {
-        int W = 5;
-        int H = 16;
-        int X0 = 1;
-        int Y0 = 5;
+        int W = 15;
+        int H = 15;
+        int batmanStartX = 3;
+        int batmanStartY = 6;
+
+        Point bombPos = new Point(0, 1);
 
 
-        Simulator simulator = new Simulator(new Point(4, 10), new Point(1, 5));
-        Game game = new Game(W, H, X0, Y0);
+        Simulator simulator = new Simulator(bombPos, new Point(batmanStartX, batmanStartY));
+        Game game = new Game(W, H, batmanStartX, batmanStartY);
         Point batmanJump = null;
         while (true) {
+            debug("Round: " + rounds);
             String bombdir = simulator.getNextRound(batmanJump);
             debug(bombdir);
             game.printBuilding();
@@ -361,7 +399,7 @@ class Player {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
-                    new JRisk(H, W, new Point(4, 10), game.prevPosition, game.building, rounds);
+                    new JRisk(H, W, bombPos, game.prevPosition, game.building, rounds);
                 }
             });
 
