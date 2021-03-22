@@ -1,8 +1,7 @@
-package aaaa;
+package batman2;
 
 import java.awt.*;
 import javax.swing.*;
-import javax.swing.border.Border;
 
 public class JRisk {
 
