@@ -16,6 +16,72 @@ public class Player {
 
     public static final int ACCURACY = 10;
 
+    static int WIDHT;
+    static int HEIGHT;
+
+    //        public static void main(String args[]) {
+    //        Scanner in = new Scanner(System.in);
+    //        int W = in.nextInt(); // width of the building.
+    //        int H = in.nextInt(); // height of the building.
+    //        int N = in.nextInt(); // maximum number of turns before game over.
+    //        int X0 = in.nextInt();
+    //        int Y0 = in.nextInt();
+    //
+    //        WIDHT = W;
+    //        HEIGHT = H;
+    //        debug("W: " + String.valueOf(W));
+    //        debug("H: " + String.valueOf(H));
+    //
+    //        Game game = new Game(W, H, X0, Y0);
+    //        // game loop
+    //        while (true) {
+    //            String bombDir = in.next(); // Current distance to the bomb compared to previous distance (COLDER, WARMER, SAME or UNKNOWN)
+    //            String result = game.playRound(bombDir);
+    //
+    //            System.out.println(result);
+    //        }
+    //
+    //    }
+
+
+    static Integer rounds = 80;
+
+    public static void main(String args[]) {
+        int W = 50;
+        int H = 50;
+        int batmanStartX = 17;
+        int batmanStartY = 29;
+
+        Point bombPos = new Point(47, 45);
+
+        Simulator simulator = new Simulator(bombPos, new Point(batmanStartX, batmanStartY));
+        Game game = new Game(W, H, batmanStartX, batmanStartY);
+        Point batmanJump = null;
+        while (true) {
+            debug("Round: " + rounds);
+            String bombdir = simulator.getNextRound(batmanJump);
+            debug(bombdir);
+            game.printBuilding();
+            String batmanResult = game.playRound(bombdir);
+            String[] strings = batmanResult.split(" ");
+            batmanJump = new Point(Integer.parseInt(strings[0]), Integer.parseInt(strings[1]));
+
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    new JRisk(H, W, bombPos, game.prevPosition, game.building, rounds);
+                }
+            });
+
+            Scanner scanner = new Scanner(System.in);
+            String line = null;
+            while (line == null) {
+                line = scanner.nextLine();
+            }
+            rounds--;
+        }
+    }
+
     static class Game {
 
         Polygon building;
@@ -51,52 +117,20 @@ public class Player {
 
 
         private String getNextMove() {
-            //            int x = (int) building.getBounds().getCenterX();
-            //            int y = (int) building.getBounds().getCenterY();
             triedPoints.add(new Point(batmanPosition.x / ACCURACY, batmanPosition.y / ACCURACY));
-            int sumX = 0;
-            for (final int xpoint : building.xpoints) {
-                sumX = sumX + xpoint;
+
+            double[] centroid = find_Centroid(building.xpoints, building.ypoints);
+
+            int roundedX = (int) (centroid[0] / ACCURACY);
+            int roundedY = (int) (centroid[1] / ACCURACY);
+
+            if (roundedX  == batmanPosition.x  && roundedY  == batmanPosition.y ) {
+                debug("SAME POINT");
+                roundedX = roundedX + 1;
             }
-            int x = sumX / building.xpoints.length;
-
-            int sumY = 0;
-            for (final int ypoint : building.ypoints) {
-                sumY = sumY + ypoint;
-            }
-            int y = sumY / building.ypoints.length;
-
-            int roundedX = x / ACCURACY;
-            int roundedY = y / ACCURACY;
-
-            while (isTriedPoint(roundedX, roundedY) || !building.contains(roundedX * ACCURACY, roundedY * ACCURACY)) {
-                Point randPoint = generatePoint(building);
-                roundedX = randPoint.x / ACCURACY;
-                roundedY = randPoint.y / ACCURACY;
-
-            }
-
-            //            if (x / ACCURACY == batmanPosition.x / ACCURACY && y / ACCURACY == batmanPosition.y / ACCURACY) {
-            //                //                    Point randomPoint;
-            //                debug("SAME POINT");
-            //                //                 do {
-            //                //                    randomPoint = generatePoint(building);
-            //                //                } while (randomPoint.x / ACCURACY == x / ACCURACY && randomPoint.y / ACCURACY == y / ACCURACY);
-            //                Point newPoint = getPointWhenInTheMiddle();
-            //                x = newPoint.x;
-            //                y = newPoint.y;
-            //                //x = randomPoint.x;
-            //                //y = randomPoint.y;
-            //            }
-            //
-            //
-            //            if (isTriedPoint(roundedX, roundedY)) {
-            //                debug("mááá benne van");
-            //            }
 
             prevPosition.setLocation(batmanPosition);
             batmanPosition.setLocation(roundedX * ACCURACY, roundedY * ACCURACY);
-            debug("Jump pos: " + x + ", " + y);
             debug("Jump rounded pos: " + roundedX + ", " + roundedY);
             return roundedX + " " + roundedY;
         }
@@ -113,15 +147,101 @@ public class Player {
             return new Point((int) x, (int) y);
         }
 
-        private Point getPointWhenInTheMiddle() {
-            Rectangle rectangle = building.getBounds();
-            Rectangle newRectangle = new Rectangle();
-            newRectangle.setBounds(
-                    (int) rectangle.getMinX(),
-                    (int) rectangle.getMinY(),
-                    (int) (batmanPosition.x - rectangle.getMinX()),
-                    (int) (batmanPosition.y - rectangle.getMinY()));
-            return new Point((int) newRectangle.getCenterX(), (int) newRectangle.getCenterY());
+
+        static double[] find_Centroid(int[] x, int[] y)
+        {
+            double []ans = new double[2];
+
+            int n = x.length;
+            double signedArea = 0;
+
+            // For all vertices
+            for (int i = 0; i < n; i++)
+            {
+
+                double x0 = x[i], y0 = y[i];
+                double x1 = x[(i + 1) % n], y1 =y[(i + 1) % n];
+
+                // Calculate value of A
+                // using shoelace formula
+                double A = (x0 * y1) - (x1 * y0);
+                signedArea += A;
+
+                // Calculating coordinates of
+                // centroid of polygon
+                ans[0] += (x0 + x1) * A;
+                ans[1] += (y0 + y1) * A;
+            }
+
+            signedArea *= 0.5;
+            ans[0] = (ans[0]) / (6 * signedArea);
+            ans[1]= (ans[1]) / (6 * signedArea);
+
+            return ans;
+        }
+
+
+        public static double[] computePolygonCentroid(int[] x, int[] y) {
+            double cx = 0.0;
+            double cy = 0.0;
+
+            int n = x.length;
+            for (int i = 0; i < n - 1; i++) {
+                double a = x[i] * y[i + 1] - x[i + 1] * y[i];
+                cx += (x[i] + x[i + 1]) * a;
+                cy += (y[i] + y[i + 1]) * a;
+            }
+            double a = x[n - 1] * y[0] - x[0] * y[n - 1];
+            cx += (x[n - 1] + x[0]) * a;
+            cy += (y[n - 1] + y[0]) * a;
+
+            double area = computePolygonArea(x, y);
+
+            cx /= 6 * area;
+            cy /= 6 * area;
+
+            return new double[] {cx, cy};
+        }
+
+        /**
+         * Compute the area of the specified polygon.
+         *
+         * @param x X coordinates of polygon.
+         * @param y Y coordinates of polygon.
+         * @return Area of specified polygon.
+         */
+        public static double computePolygonArea(int[] x, int[] y) {
+            int n = x.length;
+
+            double area = 0.0;
+            for (int i = 0; i < n - 1; i++) {
+                area += (x[i] * y[i + 1]) - (x[i + 1] * y[i]);
+            }
+            area += (x[n - 1] * y[0]) - (x[0] * y[n - 1]);
+
+            area *= 0.5;
+
+            return area;
+        }
+
+        /**
+         * Compute the area of the specified polygon.
+         *
+         * @param xy Geometry of polygon [x,y,...]
+         * @return Area of specified polygon.
+         */
+        public static double computePolygonArea(int[] xy) {
+            int n = xy.length;
+
+            double area = 0.0;
+            for (int i = 0; i < n - 2; i += 2) {
+                area += (xy[i] * xy[i + 3]) - (xy[i + 2] * xy[i + 1]);
+            }
+            area += (xy[xy.length - 2] * xy[1]) - (xy[0] * xy[xy.length - 1]);
+
+            area *= 0.5;
+
+            return area;
         }
 
         private boolean isTriedPoint(int x, int y) {
@@ -133,12 +253,12 @@ public class Player {
             return false;
         }
 
-
         //Cut, rotate polgions
 
         private void cutBuilding(Point from, Point to, boolean middleRotate) {
             Point[] points;
 
+            debug("Cut bulidng: rotate: " + middleRotate);
             if (middleRotate) {
                 points = rotateLineInTheMiddle(from, to);
             } else {
@@ -154,6 +274,12 @@ public class Player {
             }
             Polygon cutPoly = cutPolygon(building, intersections.get(0), intersections.get(1), from, to);
             building = cutPoly;
+            debug("Cutted points:");
+            printBuilding();
+            Polygon clearedPoly = cleanPoly(cutPoly);
+            building = clearedPoly;
+            debug("Cleared points:");
+            printBuilding();
         }
 
 
@@ -166,7 +292,7 @@ public class Player {
 
             Point OC = new Point(OM.x + MC.x, OM.y + MC.y);
             Point OA = new Point(OM.x + MA.x, OM.y + MA.y);
-            return new Point[]{OC, OA};
+            return new Point[] {OC, OA};
         }
 
         private Point[] rotateLineInTheEnd(Point first, Point second) {
@@ -178,7 +304,7 @@ public class Player {
 
             Point OC = new Point(OM.x + MC.x, OM.y + MC.y);
             Point OA = new Point(OM.x + MA.x, OM.y + MA.y);
-            return new Point[]{OC, OA};
+            return new Point[] {OC, OA};
         }
 
 
@@ -265,6 +391,44 @@ public class Player {
             return leftPoly.contains(to) ? leftPoly : rightPoly;
         }
 
+        private Polygon cleanPoly(Polygon polygon) {
+            Polygon cleanPolygon = new Polygon();
+            List<Point> unnecessaryPoints = new ArrayList<>();
+            for (int i = 0; i != polygon.npoints; i++) {
+                int length = polygon.npoints;
+                Point first = new Point(polygon.xpoints[i], polygon.ypoints[i]);
+
+                int middleIndex = i + 1;
+                if (i + 1 >= length) {
+                    middleIndex = middleIndex - length;
+                }
+                Point middle = new Point(polygon.xpoints[middleIndex], polygon.ypoints[middleIndex]);
+
+                int lastIndex = i + 2;
+                if (i + 2 >= length) {
+                    lastIndex = lastIndex - length;
+                }
+                Point last = new Point(polygon.xpoints[lastIndex], polygon.ypoints[lastIndex]);
+
+                if ((first.x == middle.x && first.x == last.x) || (first.y == middle.y && first.y == last.y)) {
+                    unnecessaryPoints.add(middle);
+                }
+            }
+            for (int i = 0; i != polygon.npoints; i++) {
+                Point point = new Point(polygon.xpoints[i], polygon.ypoints[i]);
+                if (!unnecessaryPoints.contains(point)) {
+                    cleanPolygon.addPoint(point.x, point.y);
+                }
+
+            }
+            debug("Removed number of points: " + unnecessaryPoints.size());
+
+
+
+
+            return cleanPolygon;
+        }
+
 
         private ArrayList<Point> sortPoly(ArrayList<Point> originalPoints) {
             ArrayList<Point> sortedList = new ArrayList<>();
@@ -347,74 +511,7 @@ public class Player {
 
     }
 
-    static int WIDHT;
-    static int HEIGHT;
 
-    //        public static void main(String args[]) {
-    //        Scanner in = new Scanner(System.in);
-    //        int W = in.nextInt(); // width of the building.
-    //        int H = in.nextInt(); // height of the building.
-    //        int N = in.nextInt(); // maximum number of turns before game over.
-    //        int X0 = in.nextInt();
-    //        int Y0 = in.nextInt();
-    //
-    //        WIDHT = W;
-    //        HEIGHT = H;
-    //        debug("W: " + String.valueOf(W));
-    //        debug("H: " + String.valueOf(H));
-    //
-    //        Game game = new Game(W, H, X0, Y0);
-    //        // game loop
-    //        while (true) {
-    //            String bombDir = in.next(); // Current distance to the bomb compared to previous distance (COLDER, WARMER, SAME or UNKNOWN)
-    //            String result = game.playRound(bombDir);
-    //
-    //            System.out.println(result);
-    //        }
-    //
-    //    }
-
-
-    static Integer rounds = 80;
-
-    public static void main(String args[]) {
-        int W = 50;
-        int H = 50;
-        int batmanStartX = 17;
-        int batmanStartY = 29;
-
-        Point bombPos = new Point(43, 40);
-
-
-        Simulator simulator = new Simulator(bombPos, new Point(batmanStartX, batmanStartY));
-        Game game = new Game(W, H, batmanStartX, batmanStartY);
-        Point batmanJump = null;
-        while (true) {
-            debug("Round: " + rounds);
-            String bombdir = simulator.getNextRound(batmanJump);
-            debug(bombdir);
-            game.printBuilding();
-            String batmanResult = game.playRound(bombdir);
-            String[] strings = batmanResult.split(" ");
-            batmanJump = new Point(Integer.parseInt(strings[0]), Integer.parseInt(strings[1]));
-
-
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    new JRisk(H, W, bombPos, game.prevPosition, game.building, rounds);
-                }
-            });
-
-
-            Scanner scanner = new Scanner(System.in);
-            String line = null;
-            while (line == null) {
-                line = scanner.nextLine();
-            }
-            rounds--;
-        }
-    }
 
 
     public static void debug(String string) {
