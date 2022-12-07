@@ -5,8 +5,8 @@ import javax.swing.*;
 
 public class JRisk {
 
-    public static final int WIN_WIDTH = 1000;
-    public static final int WIN_HEIGHT = 1000;
+    public static final int WIN_WIDTH = 700;
+    public static final int WIN_HEIGHT = 700;
 
     private JFrame mainMap;
 

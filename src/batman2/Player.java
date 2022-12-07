@@ -1,5 +1,8 @@
 package batman2;
 
+import batman2.JRisk;
+import batman2.Simulator;
+
 import javax.swing.*;
 import java.awt.*;
 import java.util.*;
@@ -9,7 +12,7 @@ import java.util.List;
  * Auto-generated code below aims at helping you parse
  * the standard input according to the problem statement.
  **/
-class Player {
+public class Player {
 
     public static final int ACCURACY = 10;
 
@@ -50,100 +53,46 @@ class Player {
         private String getNextMove() {
             //            int x = (int) building.getBounds().getCenterX();
             //            int y = (int) building.getBounds().getCenterY();
-            int x;
-            int y;
             triedPoints.add(new Point(batmanPosition.x / ACCURACY, batmanPosition.y / ACCURACY));
-            if (building.contains(batmanPosition.x, batmanPosition.y)) {
-                Rectangle bounds = building.getBounds();
-
-                if (batmanPosition.x / ACCURACY == bounds.getHeight() / 2 / ACCURACY) {
-                    x = batmanPosition.x + 1 * ACCURACY;
-                } else if (batmanPosition.x > bounds.getHeight() / 2) {
-                    x = (int) (bounds.getMaxX() - batmanPosition.x);
-                } else {
-                    x = (int) (bounds.getMinX() + batmanPosition.x);
-                }
-
-                if (batmanPosition.y / ACCURACY == bounds.getWidth() / 2 / ACCURACY) {
-                    y = batmanPosition.y + 1 * ACCURACY;
-                } else if (batmanPosition.y > bounds.getWidth() / 2) {
-                    y = (int) (bounds.getMaxY() - batmanPosition.y);
-                } else {
-                    y = (int) (bounds.getMinY() + batmanPosition.y);
-                }
-            } else {
-                int sumX = 0;
-                for (final int xpoint : building.xpoints) {
-                    sumX = sumX + xpoint;
-                }
-                x = sumX / building.xpoints.length;
-
-                int sumY = 0;
-                for (final int ypoint : building.ypoints) {
-                    sumY = sumY + ypoint;
-                }
-                y = sumY / building.ypoints.length;
+            int sumX = 0;
+            for (final int xpoint : building.xpoints) {
+                sumX = sumX + xpoint;
             }
+            int x = sumX / building.xpoints.length;
 
+            int sumY = 0;
+            for (final int ypoint : building.ypoints) {
+                sumY = sumY + ypoint;
+            }
+            int y = sumY / building.ypoints.length;
 
             int roundedX = x / ACCURACY;
             int roundedY = y / ACCURACY;
 
-            int originalX = roundedX;
-            int originalY = roundedY;
-
-            int tryIndex = 0;
             while (isTriedPoint(roundedX, roundedY) || !building.contains(roundedX * ACCURACY, roundedY * ACCURACY)) {
-                int wholeIndex = tryIndex / 8 + 1;
-                switch (tryIndex % 8) {
-                    case 0:
-                        roundedX = originalX;
-                        roundedY = originalY + wholeIndex;
-                        break;
-                    case 1:
-                        roundedX = originalX - wholeIndex;
-                        roundedY = originalY + wholeIndex;
-                        break;
-                    case 2:
-                        roundedX = originalX;
-                        roundedY = originalY - wholeIndex;
-                        break;
-                    case 3:
-                        roundedX = originalX + wholeIndex;
-                        roundedY = originalY + wholeIndex;
-                        break;
-                    case 4:
-                        roundedX = originalX + wholeIndex;
-                        roundedY = originalY - wholeIndex;
-                        break;
-                    case 5:
-                        roundedX = originalX - wholeIndex;
-                        roundedY = originalY;
-                        break;
-                    case 6:
-                        roundedX = originalX + wholeIndex;
-                        roundedY = originalY;
-                        break;
-                    case 7:
-                        roundedX = originalX - wholeIndex;
-                        roundedY = originalY - wholeIndex;
-                        break;
-                }
-                tryIndex++;
+                Point randPoint = generatePoint(building);
+                roundedX = randPoint.x / ACCURACY;
+                roundedY = randPoint.y / ACCURACY;
+
             }
 
-//            if (x / ACCURACY == batmanPosition.x / ACCURACY && y / ACCURACY == batmanPosition.y / ACCURACY) {
-//                //                    Point randomPoint;
-//                debug("SAME POINT");
-//                //                 do {
-//                //                    randomPoint = generatePoint(building);
-//                //                } while (randomPoint.x / ACCURACY == x / ACCURACY && randomPoint.y / ACCURACY == y / ACCURACY);
-//                Point newPoint = getPointWhenInTheMiddle();
-//                x = newPoint.x;
-//                y = newPoint.y;
-//                //x = randomPoint.x;
-//                //y = randomPoint.y;
-//            }
+            //            if (x / ACCURACY == batmanPosition.x / ACCURACY && y / ACCURACY == batmanPosition.y / ACCURACY) {
+            //                //                    Point randomPoint;
+            //                debug("SAME POINT");
+            //                //                 do {
+            //                //                    randomPoint = generatePoint(building);
+            //                //                } while (randomPoint.x / ACCURACY == x / ACCURACY && randomPoint.y / ACCURACY == y / ACCURACY);
+            //                Point newPoint = getPointWhenInTheMiddle();
+            //                x = newPoint.x;
+            //                y = newPoint.y;
+            //                //x = randomPoint.x;
+            //                //y = randomPoint.y;
+            //            }
+            //
+            //
+            //            if (isTriedPoint(roundedX, roundedY)) {
+            //                debug("mááá benne van");
+            //            }
 
             prevPosition.setLocation(batmanPosition);
             batmanPosition.setLocation(roundedX * ACCURACY, roundedY * ACCURACY);
@@ -178,15 +127,9 @@ class Player {
         private boolean isTriedPoint(int x, int y) {
             for (Point triedPoint : triedPoints) {
                 if (x == triedPoint.x && y == triedPoint.y) {
-                    debug("Tried");
                     return true;
                 }
             }
-            return false;
-        }
-
-        private boolean isContains(){
-            //TODO
             return false;
         }
 
@@ -373,7 +316,7 @@ class Player {
         }
 
         public String playRound(final String bombDir) {
-//            printBuilding();
+            //            printBuilding();
             switch (bombDir) {
                 case "UNKNOWN":
                     return getNextMove();
@@ -394,8 +337,8 @@ class Player {
 
         public void printBuilding() {
             StringBuffer sb = new StringBuffer();
-//            sb.append(WIDHT * ACCURACY + ";" + HEIGHT * ACCURACY + ";");
-//            sb.append(batmanPosition.x + "," + batmanPosition.y + ";");
+            //            sb.append(WIDHT * ACCURACY + ";" + HEIGHT * ACCURACY + ";");
+            //            sb.append(batmanPosition.x + "," + batmanPosition.y + ";");
             for (int i = 0; i != building.npoints; i++) {
                 sb.append(building.xpoints[i] + "," + building.ypoints[i] + "; ");
             }
@@ -407,40 +350,40 @@ class Player {
     static int WIDHT;
     static int HEIGHT;
 
-//        public static void main(String args[]) {
-//        Scanner in = new Scanner(System.in);
-//        int W = in.nextInt(); // width of the building.
-//        int H = in.nextInt(); // height of the building.
-//        int N = in.nextInt(); // maximum number of turns before game over.
-//        int X0 = in.nextInt();
-//        int Y0 = in.nextInt();
-//
-//        WIDHT = W;
-//        HEIGHT = H;
-//        debug("W: " + String.valueOf(W));
-//        debug("H: " + String.valueOf(H));
-//
-//        Game game = new Game(W, H, X0, Y0);
-//        // game loop
-//        while (true) {
-//            String bombDir = in.next(); // Current distance to the bomb compared to previous distance (COLDER, WARMER, SAME or UNKNOWN)
-//            String result = game.playRound(bombDir);
-//
-//            System.out.println(result);
-//        }
-//
-//    }
+    //        public static void main(String args[]) {
+    //        Scanner in = new Scanner(System.in);
+    //        int W = in.nextInt(); // width of the building.
+    //        int H = in.nextInt(); // height of the building.
+    //        int N = in.nextInt(); // maximum number of turns before game over.
+    //        int X0 = in.nextInt();
+    //        int Y0 = in.nextInt();
+    //
+    //        WIDHT = W;
+    //        HEIGHT = H;
+    //        debug("W: " + String.valueOf(W));
+    //        debug("H: " + String.valueOf(H));
+    //
+    //        Game game = new Game(W, H, X0, Y0);
+    //        // game loop
+    //        while (true) {
+    //            String bombDir = in.next(); // Current distance to the bomb compared to previous distance (COLDER, WARMER, SAME or UNKNOWN)
+    //            String result = game.playRound(bombDir);
+    //
+    //            System.out.println(result);
+    //        }
+    //
+    //    }
 
 
     static Integer rounds = 80;
 
     public static void main(String args[]) {
-        int W = 1;
-        int H = 100;
-        int batmanStartX = 0;
-        int batmanStartY = 98;
+        int W = 50;
+        int H = 50;
+        int batmanStartX = 17;
+        int batmanStartY = 29;
 
-        Point bombPos = new Point(0, 92);
+        Point bombPos = new Point(43, 40);
 
 
         Simulator simulator = new Simulator(bombPos, new Point(batmanStartX, batmanStartY));
